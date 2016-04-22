@@ -1,0 +1,7 @@
+Procedura jest taka sama jak gaborjerome, ale:
+
+- maska to szum
+
+- utrzymujemy poprawnoœæ na poziomie .8 manipuluj¹c kontrastem
+
+- czas prezentacji tylko 32 ms
