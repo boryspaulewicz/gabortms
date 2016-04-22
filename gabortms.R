@@ -21,12 +21,15 @@ LONELY.MASK.DURATION = 0
 SCALE.MAX.DURATION = 100000
 MAX.REACTION.TIME = 4000
 FEEDBACK.TIME = 1000
+FITTING.START = 20
+TARGET.ACC = .8
 block.length = 24
 
 ## Parametry rysowania gabora i skali
 
 sigma = .01
 f = 20
+contrast = .3
 scale.position = .75
 
 ## Globalne obiekty graficzne
@@ -140,10 +143,10 @@ trial.code = function(trial, side = 'left', contrast = .5, duration = 32, withsc
                 stim.cleared = CLOCK$time
                 state = 'post-gabor'
             }
-        }, 'post-gabor' = {
+        }, 'post-gabor' = { ## tu rysujemy maskę
             if((CLOCK$time - stim.cleared) > POST.STIM.TIME){
-                WINDOW$draw(m)
-                WINDOW$display()
+                ## WINDOW$draw(m) ##! Bez maski
+                ## WINDOW$display()
                 mask.onset = CLOCK$time
                 scale.rt = scale.value = -1
                 mp = 666
@@ -153,7 +156,7 @@ trial.code = function(trial, side = 'left', contrast = .5, duration = 32, withsc
             if((CLOCK$time - mask.onset) > LONELY.MASK.DURATION)state = 'show-leftright'
         }, 'show-leftright' = {
             WINDOW$clear(c(.5, .5, .5))
-            WINDOW$draw(m)
+            ## WINDOW$draw(m) ##! Bez maski
             TXT$set.string("LEWO     PRAWO")
             center(TXT, WINDOW)
             TXT$set.position(c(WINDOW$get.size()[1] / 2, WINDOW$get.size()[2] * scale.position))
@@ -224,9 +227,9 @@ trial.code = function(trial, side = 'left', contrast = .5, duration = 32, withsc
             WINDOW$display()
             ## Zapisujemy dotychczasowe dane
             dane[trial, c('contrast', 'acc')] = c(contrast, acc)
-            if(trial > 50){
+            if(trial > FITTING.START){
                 model <<- glm(acc ~ contrast, dane[1:trial,], family = binomial)
-                new.contrast <<- optimize(function(x)(.8 - binomial()$linkinv(coef(model)[1] + x * coef(model)[2])),
+                new.contrast <<- optimize(function(x)(TARGET.ACC - binomial()$linkinv(coef(model)[1] + x * coef(model)[2])),
                                         c(0, 1))
             }
             return(list(scalert = scale.rt, scalevalue = scale.value,
