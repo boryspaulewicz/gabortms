@@ -190,7 +190,7 @@ trial.code = function(trial, side = 'left', contrast = .5, duration = 64, withsc
                     state = 'done'
             }else{
                 WINDOW$clear(c(.5, .5, .5))
-                WINDOW$draw(m)
+                ## WINDOW$draw(m)
                 switch(as.character(scale),
                        'pas' = {
                            mp = draw.scale(list(M = c('Nic nie widziałem', 'Widziałem niewyraźnie', 'Widziałem dość wyraźnie', 'Widziałem bardzo wyraźnie'),
