@@ -3,8 +3,7 @@
 ## TODO: catch triale = czas prezentacji 0, żeby sprawdzić, czy nie
 ## podają zbyt wysokiej pewności gdy nic nie ma.
 
-## Kolejność zawsze gabor, skala. Kryjemy gabora maską - szachownicą.
-## Cośtam o dostosowaniu czasu prezentacji maski, żeby cośtam było 328
+## Kolejność zawsze gabor, skala. Gabor ma nałożony szum jednostajny.
 
 ## Dwa treningi: czasy standardowo 4 Trening odpowiedzi: 500 ms x 8
 ## prób Trening ze skalą: 4 czasy x 16 prób - zapisywanie danych już
@@ -16,12 +15,12 @@ if(interactive())source('~/cs/code/r/tasks/task/task.R')
 ## Globalne parametry zadania
 
 FIXATION.TIME = 1500
-POST.STIM.TIME = 0
+POST.STIM.TIME = 32
 LONELY.MASK.DURATION = 0
 SCALE.MAX.DURATION = 100000
 MAX.REACTION.TIME = 4000
 FEEDBACK.TIME = 1000
-FITTING.START = 20
+FITTING.START = 50
 TARGET.ACC = .8
 block.length = 24
 
@@ -46,8 +45,8 @@ mask = new(Image)
 for(obj in c(i, mask)){
     obj$create(WINDOW$get.size()[1] * 6 * sigma, WINDOW$get.size()[1] * 6 * sigma, c(0, 0, 0))
 }
-draw.sin(i, f = f, 45, sigma = sigma, contrast = contrast, mask = F)
-draw.sin(mask, f = f, 45, sigma = sigma, mask = T)
+## draw.sin(i, f = f, 45, sigma = sigma, contrast = contrast, mask = F)
+## draw.sin(mask, f = f, 45, sigma = sigma, mask = 2) ## maska w postaci szumu
 i.texture = new(Texture)
 i.texture$create(i$size[1], i$size[2])
 i.texture$update(i, 0, 0)
@@ -76,8 +75,9 @@ draw.stim = function(side){
 
 KEYS <<- c(Key.Left, Key.Right)
 
-dane = model = new.contrast = NULL
-trial.code = function(trial, side = 'left', contrast = .5, duration = 32, withscale = 1, feedback = 0, scale = 'pas', stage = 'unknown'){
+dane = model = NULL
+new.contrast = contrast ## na początku domyślny
+trial.code = function(trial, side = 'left', contrast = .5, duration = 64, withscale = 1, feedback = 0, scale = 'pas', stage = 'unknown'){
     ## Kod specyficzny dla zadania
     ## ...
     ## Szablon
@@ -87,9 +87,9 @@ trial.code = function(trial, side = 'left', contrast = .5, duration = 32, withsc
     }else if((trial %% block.length) == 0){
         state = 'break'
     }else{ state = 'show-fixation' }
-    if(trial > 50){
-        draw.sin(i, f = f, 45, sigma = sigma, contrast = new.contrast, mask = F)
-    }
+    ## Rysujemy bodziec
+    draw.sin(i, f = f, 45, sigma = sigma, contrast = new.contrast, mask = 3, mask.intensity = .9)
+    i.texture$update(i, 0, 0)
     start = CLOCK$time
     while(WINDOW$is.open()){
         process.inputs()
@@ -145,7 +145,7 @@ trial.code = function(trial, side = 'left', contrast = .5, duration = 32, withsc
             }
         }, 'post-gabor' = { ## tu rysujemy maskę
             if((CLOCK$time - stim.cleared) > POST.STIM.TIME){
-                ## WINDOW$draw(m) ##! Bez maski
+                ## WINDOW$draw(m) ##! Bez maski po bodźcu
                 ## WINDOW$display()
                 mask.onset = CLOCK$time
                 scale.rt = scale.value = -1
@@ -156,7 +156,7 @@ trial.code = function(trial, side = 'left', contrast = .5, duration = 32, withsc
             if((CLOCK$time - mask.onset) > LONELY.MASK.DURATION)state = 'show-leftright'
         }, 'show-leftright' = {
             WINDOW$clear(c(.5, .5, .5))
-            ## WINDOW$draw(m) ##! Bez maski
+            ## WINDOW$draw(m) ##! Bez maski po bodźcu
             TXT$set.string("LEWO     PRAWO")
             center(TXT, WINDOW)
             TXT$set.position(c(WINDOW$get.size()[1] / 2, WINDOW$get.size()[2] * scale.position))
@@ -225,12 +225,12 @@ trial.code = function(trial, side = 'left', contrast = .5, duration = 32, withsc
         }, 'done' = {
             WINDOW$clear(c(.5, .5, .5))
             WINDOW$display()
-            ## Zapisujemy dotychczasowe dane
-            dane[trial, c('contrast', 'acc')] = c(contrast, acc)
-            if(trial > FITTING.START){
+            ## Zapisujemy dotychczasowe dane i dopasowujemy model do kalibracji, ale tylko na etapie testowym
+            dane[trial, c('contrast', 'acc')] <<- c(contrast, acc)
+            if((trial > FITTING.START) & (stage == 'test')){
                 model <<- glm(acc ~ contrast, dane[1:trial,], family = binomial)
-                new.contrast <<- optimize(function(x)(TARGET.ACC - binomial()$linkinv(coef(model)[1] + x * coef(model)[2])),
-                                        c(0, 1))
+                new.contrast <<- optimize(function(x)(abs(TARGET.ACC - binomial()$linkinv(coef(model)[1] + x * coef(model)[2]))),
+                                        c(0, 1))$minimum
             }
             return(list(scalert = scale.rt, scalevalue = scale.value,
                         rt = rt, acc = acc, contrastopt = new.contrast))
@@ -250,12 +250,39 @@ docx.instr = function(file, ask.if.done = T){
 
 TASK.NAME <<- 'gabortms'
 
-cnd = db.random.condition(c('pas', 'cpas', 'ias', 'cs'))
+cnd = 'pas'
+
+docx.instr(c(pas = 'InstrukcjaPAS.docx', cpas = 'InstrukcjaCPAS.docx', ias = 'InstrukcjaIAS.docx', cs = 'InstrukcjaCS.docx')[cnd])
+
+## ## Wybieramy na początek zawsze PAS-a, nie pytamy o dane osobowe
+## cnd = 'pas' ## może być też 'cpas', 'ias', albo 'cs'
+
+## Tak się uruchamia w danym momencie określoną instrukcję
+docx.instr('Instrukcja0.docx')
 
 gui.user.data()
 
-run.trials(trial.code, condition = cnd, expand.grid(side = c('left', 'right'), contrast = c(.1, .4), scale = cnd,
-                                                    withscale = 0, feedback = 0, duration = 32),
-                                        b = 10, n = 5, record.session = T)
+docx.instr('Instrukcja1.docx')
+
+## Trening 1, 500 ms 8 prób bez skali
+run.trials(trial.code, condition = cnd, expand.grid(side = c('left', 'right'), scale = cnd,
+                           withscale = 0, feedback = 1, duration = 500, contrast = contrast),
+           b = 4)
+
+docx.instr('Instrukcja2.docx')
+
+## Trening 2, 16 prób ze skalą, czas 32
+run.trials(trial.code, condition = cnd, expand.grid(side = c('left', 'right'), scale = cnd, stage = 'trening2',
+                           withscale = 1, feedback = 0, duration = 32, contrast = contrast),
+           b = 8, record.session = T)
+
+docx.instr('Instrukcja3.docx')
+
+## Etap właściwy, 320 prób, czas 32, z kalibracją
+run.trials(trial.code, condition = cnd, expand.grid(side = c('left', 'right'), scale = cnd, stage = 'test',
+                           withscale = 1, feedback = 0, duration = 32, contrast = c(.1, .3)),
+           b = 8, n = 10, record.session = T)
+
+docx.instr('Instrukcja4.docx', F)
 
 if(!interactive())quit("no")
