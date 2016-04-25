@@ -10,7 +10,7 @@
 ## dla treningu ze skalą
 
 
-if(interactive())source('~/cs/code/r/tasks/task/task.R')
+if(interactive())source('/taskdata/task/task.R')
 
 ## Globalne parametry zadania
 
@@ -18,7 +18,7 @@ FIXATION.TIME = 1500
 POST.STIM.TIME = 32
 LONELY.MASK.DURATION = 0
 SCALE.MAX.DURATION = 100000
-MAX.REACTION.TIME = 2000
+MAX.REACTION.TIME = 3000
 FEEDBACK.TIME = 1000
 FITTING.START = 50
 TARGET.ACC = .8
@@ -27,9 +27,10 @@ block.length = 24
 ## Parametry rysowania gabora i skali
 
 sigma = .01
-f = 20
-contrast = .3
+f = 40
+contrast = .7
 scale.position = .75
+mask.intensity = .8 ## minimalnie 0, maksymalnie .99 albo coś takiego
 
 ## Globalne obiekty graficzne
 
@@ -77,7 +78,8 @@ KEYS <<- c(Key.Left, Key.Right)
 
 dane = model = NULL
 new.contrast = contrast ## na początku domyślny
-trial.code = function(trial, side = 'left', contrast = .5, duration = 64, withscale = 1, feedback = 0, scale = 'pas', stage = 'unknown'){
+trial.code = function(trial, side = 'left', contrast = .5, duration = 64, withscale = 1, feedback = 0, scale = 'pas', stage = 'unknown',
+                      show.leftright = 1){
     ## Kod specyficzny dla zadania
     ## ...
     ## Szablon
@@ -88,7 +90,8 @@ trial.code = function(trial, side = 'left', contrast = .5, duration = 64, withsc
         state = 'break'
     }else{ state = 'show-fixation' }
     ## Rysujemy bodziec
-    draw.sin(i, f = f, 45, sigma = sigma, contrast = new.contrast, mask = 3, mask.intensity = .9)
+    draw.sin(i, f = f, 45, sigma = sigma, contrast = new.contrast, mask = 3,
+             mask.intensity = mask.intensity)
     i.texture$update(i, 0, 0)
     start = CLOCK$time
     while(WINDOW$is.open()){
@@ -157,18 +160,24 @@ trial.code = function(trial, side = 'left', contrast = .5, duration = 64, withsc
         }, 'show-leftright' = {
             WINDOW$clear(c(.5, .5, .5))
             ## WINDOW$draw(m) ##! Bez maski po bodźcu
-            TXT$set.string("LEWO     PRAWO")
-            center(TXT, WINDOW)
-            TXT$set.position(c(WINDOW$get.size()[1] / 2, WINDOW$get.size()[2] * scale.position))
-            WINDOW$draw(TXT)
+            if(show.leftright){
+                TXT$set.string("LEWO     PRAWO")
+                center(TXT, WINDOW)
+                TXT$set.position(c(WINDOW$get.size()[1] / 2, WINDOW$get.size()[2] * scale.position))
+                WINDOW$draw(TXT)
+            }
             WINDOW$display()
             leftright.onset = CLOCK$time
             state = 'measure-reaction'
         }, 'measure-reaction' = {
-            if(any(BUTTON.PRESSED[1:2] > stim.onset) || ((CLOCK$time - leftright.onset) > MAX.REACTION.TIME)){
+            if(any(BUTTON.PRESSED[1:2] > stim.onset) || ((CLOCK$time - stim.onset) > MAX.REACTION.TIME)){
                 response = which(BUTTON.PRESSED[1:2] > stim.onset)
                 rt = BUTTON.PRESSED[response] - stim.onset
                 acc = as.numeric(response == c(left = 1, right = 2)[side])
+                if((CLOCK$time - stim.onset) > MAX.REACTION.TIME){
+                    rt = MAX.REACTION.TIME
+                    acc = 2
+                }
                 if(withscale == 1){
                     scale.onset = CLOCK$time
                     state = 'draw-scale'
@@ -216,7 +225,7 @@ trial.code = function(trial, side = 'left', contrast = .5, duration = 64, withsc
         }, 'feedback' = {
             if((CLOCK$time - feedback.onset) < FEEDBACK.TIME){
                 WINDOW$clear(c(.5, .5, .5))
-                TXT$set.string(c('Źle', 'Dobrze', 'Za późno')[ifelse(rt > MAX.REACTION.TIME, 3, acc + 1)])
+                TXT$set.string(c('Źle', 'Dobrze', 'Za późno')[acc + 1])
                 WINDOW$draw(center.win(TXT))
                 WINDOW$display()
             }else{
@@ -273,14 +282,14 @@ docx.instr('Instrukcja2.docx')
 
 ## Trening 2, 16 prób ze skalą, czas 32
 run.trials(trial.code, condition = cnd, expand.grid(side = c('left', 'right'), scale = cnd, stage = 'trening2',
-                           withscale = 1, feedback = 0, duration = 32, contrast = contrast),
+                           withscale = 1, feedback = 0, duration = 32, contrast = contrast, show.leftright = 0),
            b = 8, record.session = T)
 
 docx.instr('Instrukcja3.docx')
 
 ## Etap właściwy, 320 prób, czas 32, z kalibracją
 run.trials(trial.code, condition = cnd, expand.grid(side = c('left', 'right'), scale = cnd, stage = 'test',
-                           withscale = 1, feedback = 0, duration = 32, contrast = c(.1, .3)),
+                           withscale = 1, feedback = 0, duration = 32, contrast = c(.1, .3), show.leftright = 0),
            b = 8, n = 10, record.session = T)
 
 docx.instr('Instrukcja4.docx', F)
