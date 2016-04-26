@@ -28,9 +28,9 @@ block.length = 24
 
 sigma = .01
 f = 40
-contrast = .7
+contrast = .6
 scale.position = .65
-mask.intensity = .8 ## minimalnie 0, maksymalnie .99 albo coś takiego
+mask.intensity = .85 ## minimalnie 0, maksymalnie .99 albo coś takiego
 
 ## Globalne obiekty graficzne
 
