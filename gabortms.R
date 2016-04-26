@@ -29,6 +29,9 @@ block.length = 24
 sigma = .01
 f = 30
 contrast = .8
+## Zakres, w jakim losujemy kontrasty na etapie kalibracji w stage = 'test'
+contrast.min = .03
+contrast.max = contrast
 scale.position = .65
 mask.intensity = .85 ## minimalnie 0, maksymalnie .99 albo coś takiego
 
@@ -79,7 +82,7 @@ KEYS <<- c(Key.Left, Key.Right)
 dane = model = NULL
 new.contrast = contrast ## na początku domyślny
 trial.code = function(trial, side = 'left', contrast = .5, duration = 64, withscale = 1, feedback = 0, scale = 'pas', stage = 'unknown',
-                      show.leftright = 1){
+                      showleftright = 1){
     ## Kod specyficzny dla zadania
     ## ...
     ## Szablon
@@ -90,7 +93,13 @@ trial.code = function(trial, side = 'left', contrast = .5, duration = 64, withsc
         state = 'break'
     }else{ state = 'show-fixation' }
     ## Rysujemy bodziec
-    if(trial > FITTING.START)contrast = new.contrast
+    if(stage == 'test'){
+        if(trial > FITTING.START){
+            contrast = new.contrast
+        }else{
+            contrast = runif(1, min = contrast.min, max = contrast.max)
+        }
+    }
     draw.sin(i, f = f, 45, sigma = sigma, contrast = contrast, mask = 3,
              mask.intensity = mask.intensity)
     i.texture$update(i, 0, 0)
@@ -161,7 +170,7 @@ trial.code = function(trial, side = 'left', contrast = .5, duration = 64, withsc
         }, 'show-leftright' = {
             WINDOW$clear(c(.5, .5, .5))
             ## WINDOW$draw(m) ##! Bez maski po bodźcu
-            if(show.leftright){
+            if(showleftright){
                 TXT$set.string("LEWO     PRAWO")
                 center(TXT, WINDOW)
                 TXT$set.position(c(WINDOW$get.size()[1] / 2, WINDOW$get.size()[2] * scale.position))
@@ -239,7 +248,8 @@ trial.code = function(trial, side = 'left', contrast = .5, duration = 64, withsc
             dane[trial, c('contrast', 'acc')] <<- c(contrast, acc)
             if((trial > FITTING.START) & (stage == 'test')){
                 model <<- glm(acc ~ contrast, dane[dane$acc %in% 0:1,], family = binomial)
-                if(coef(model)[2] > 0){
+                if(coef(model)[2] <= 0){
+                    ## Jeżeli oszacowany efekt kontrastu bez sensu ujemny, to zostajemy przy starym
                     new.contrast = contrast
                 }else{ 
                     new.contrast <<- optimize(function(x)(abs(TARGET.ACC - binomial()$linkinv(coef(model)[1] + x * coef(model)[2]))),
@@ -247,7 +257,7 @@ trial.code = function(trial, side = 'left', contrast = .5, duration = 64, withsc
                 }
             }
             return(list(scalert = scale.rt, scalevalue = scale.value,
-                        rt = rt, acc = acc, contrastopt = new.contrast))
+                        rt = rt, acc = acc, usedcontrast = contrast))
         })
     }
 }
@@ -287,15 +297,16 @@ docx.instr('Instrukcja2.docx')
 
 ## Trening 2, 16 prób ze skalą, czas 32
 run.trials(trial.code, condition = cnd, expand.grid(side = c('left', 'right'), scale = cnd, stage = 'trening2',
-                           withscale = 1, feedback = 0, duration = 32, contrast = contrast, show.leftright = 0),
+                           withscale = 1, feedback = 0, duration = 32, contrast = contrast, showleftright = 0),
            b = 8, record.session = T)
 
 docx.instr('Instrukcja3.docx')
 
 ## Etap właściwy, 320 prób, czas 32, z kalibracją
+## USER.DATA = list(name = 'admin', age = 37, gender = 'M')
 run.trials(trial.code, condition = cnd, expand.grid(side = c('left', 'right'), scale = cnd, stage = 'test',
-                           withscale = 1, feedback = 0, duration = 32, contrast = c(.1, .6), show.leftright = 0),
-           b = 8, n = 10, record.session = T)
+                           withscale = 1, feedback = 0, duration = 32, contrast = contrast, showleftright = 0),
+           b = 8, n = 20, record.session = T)
 
 docx.instr('Instrukcja4.docx', F)
 
