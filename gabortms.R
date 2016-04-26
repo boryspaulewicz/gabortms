@@ -90,7 +90,8 @@ trial.code = function(trial, side = 'left', contrast = .5, duration = 64, withsc
         state = 'break'
     }else{ state = 'show-fixation' }
     ## Rysujemy bodziec
-    draw.sin(i, f = f, 45, sigma = sigma, contrast = new.contrast, mask = 3,
+    if(trial > FITTING.START)contrast = new.contrast
+    draw.sin(i, f = f, 45, sigma = sigma, contrast = contrast, mask = 3,
              mask.intensity = mask.intensity)
     i.texture$update(i, 0, 0)
     start = CLOCK$time
@@ -238,8 +239,12 @@ trial.code = function(trial, side = 'left', contrast = .5, duration = 64, withsc
             dane[trial, c('contrast', 'acc')] <<- c(contrast, acc)
             if((trial > FITTING.START) & (stage == 'test')){
                 model <<- glm(acc ~ contrast, dane[dane$acc %in% 0:1,], family = binomial)
-                new.contrast <<- optimize(function(x)(abs(TARGET.ACC - binomial()$linkinv(coef(model)[1] + x * coef(model)[2]))),
+                if(coef(model)[2] > 0){
+                    new.contrast = contrast
+                }else{ 
+                    new.contrast <<- optimize(function(x)(abs(TARGET.ACC - binomial()$linkinv(coef(model)[1] + x * coef(model)[2]))),
                                         c(0, 1))$minimum
+                }
             }
             return(list(scalert = scale.rt, scalevalue = scale.value,
                         rt = rt, acc = acc, contrastopt = new.contrast))
