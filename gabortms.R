@@ -294,7 +294,7 @@ docx.instr('Instrukcja3.docx')
 
 ## Etap właściwy, 320 prób, czas 32, z kalibracją
 run.trials(trial.code, condition = cnd, expand.grid(side = c('left', 'right'), scale = cnd, stage = 'test',
-                           withscale = 1, feedback = 0, duration = 32, contrast = c(.2, .5), show.leftright = 0),
+                           withscale = 1, feedback = 0, duration = 32, contrast = c(.1, .4), show.leftright = 0),
            b = 8, n = 10, record.session = T)
 
 docx.instr('Instrukcja4.docx', F)
