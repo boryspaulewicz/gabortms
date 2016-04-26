@@ -27,8 +27,8 @@ block.length = 24
 ## Parametry rysowania gabora i skali
 
 sigma = .01
-f = 40
-contrast = .7
+f = 30
+contrast = .8
 scale.position = .65
 mask.intensity = .85 ## minimalnie 0, maksymalnie .99 albo coś takiego
 
