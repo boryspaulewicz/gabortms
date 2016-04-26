@@ -237,7 +237,7 @@ trial.code = function(trial, side = 'left', contrast = .5, duration = 64, withsc
             ## Zapisujemy dotychczasowe dane i dopasowujemy model do kalibracji, ale tylko na etapie testowym
             dane[trial, c('contrast', 'acc')] <<- c(contrast, acc)
             if((trial > FITTING.START) & (stage == 'test')){
-                model <<- glm(acc ~ contrast, dane[1:trial,], family = binomial)
+                model <<- glm(acc ~ contrast, dane[dane$acc %in% 0:1,], family = binomial)
                 new.contrast <<- optimize(function(x)(abs(TARGET.ACC - binomial()$linkinv(coef(model)[1] + x * coef(model)[2]))),
                                         c(0, 1))$minimum
             }
