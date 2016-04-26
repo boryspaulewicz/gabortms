@@ -10,7 +10,7 @@
 ## dla treningu ze skalą
 
 
-if(interactive())source('/taskdata/task/task.R')
+if(interactive())source('~/cs/code/r/tasks/task/task.R')
 
 ## Globalne parametry zadania
 
