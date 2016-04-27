@@ -30,8 +30,8 @@ sigma = .01
 f = 30
 contrast = .8
 ## Zakres, w jakim losujemy kontrasty na etapie kalibracji w stage = 'test'
-contrast.min = .03
-contrast.max = contrast
+contrast.min = .1
+contrast.max = .7
 scale.position = .65
 mask.intensity = .85 ## minimalnie 0, maksymalnie .99 albo coś takiego
 
