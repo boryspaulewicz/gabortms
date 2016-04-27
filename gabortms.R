@@ -127,7 +127,7 @@ trial.code = function(trial, side = 'left', contrast = .5, duration = 64, withsc
         }, 'show-fixation' = {
             WINDOW$clear(c(.5, .5, .5))
             ## Losowa pozycja myszki
-            mouse.set.position(c(runif(1, min = .2, max = .8), .5) * WINDOW$get.size())
+            mouse.set.position(c(runif(1, min = .2, max = .8), .6) * WINDOW$get.size())
             ## Punkt fiksacji
             lapply(FX, WINDOW$draw)
             WINDOW$set.mouse.cursor.visible(F)
