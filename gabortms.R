@@ -256,7 +256,9 @@ trial.code = function(trial, side = 'left', contrast = .5, duration = 64, withsc
                 }
             }
             return(list(scalert = scale.rt, scalevalue = scale.value,
-                        rt = RT, acc = ACC, usedcontrast = contrast))
+                        rt = ifelse(is.null(RT), MAX.REACTION.TIME, RT - stim.onset),
+                        acc = ifelse(is.null(ACC), 2, ACC),
+                        usedcontrast = contrast))
         })
     }
 }
