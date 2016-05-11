@@ -147,6 +147,8 @@ trial.code = function(trial, side = 'left', contrast = .5, duration = 64, withsc
             draw.stim(side)
             WINDOW$display()
             stim.onset = CLOCK$time
+            CORRECT.KEY <<- c(left = Key.Left, right = Key.Right)[side]
+            ACC <<- RT <<- NULL
             state = 'gabor-present'
         }, 'gabor-present' = {
             if((CLOCK$time - stim.onset) > duration){
@@ -180,13 +182,10 @@ trial.code = function(trial, side = 'left', contrast = .5, duration = 64, withsc
             leftright.onset = CLOCK$time
             state = 'measure-reaction'
         }, 'measure-reaction' = {
-            if(any(BUTTON.PRESSED[1:2] > stim.onset) || ((CLOCK$time - stim.onset) > MAX.REACTION.TIME)){
-                response = which(BUTTON.PRESSED[1:2] > stim.onset)
-                rt = BUTTON.PRESSED[response] - stim.onset
-                acc = as.numeric(response == c(left = 1, right = 2)[side])
+            if(!is.null(ACC) || ((CLOCK$time - stim.onset) > MAX.REACTION.TIME)){
                 if((CLOCK$time - stim.onset) > MAX.REACTION.TIME){
-                    rt = MAX.REACTION.TIME
-                    acc = 2
+                    ACC <<- 2
+                    RT <<- MAX.REACTION.TIME
                 }
                 if(withscale == 1){
                     scale.onset = CLOCK$time
@@ -235,7 +234,7 @@ trial.code = function(trial, side = 'left', contrast = .5, duration = 64, withsc
         }, 'feedback' = {
             if((CLOCK$time - feedback.onset) < FEEDBACK.TIME){
                 WINDOW$clear(c(.5, .5, .5))
-                TXT$set.string(c('Źle', 'Dobrze', 'Za późno')[acc + 1])
+                TXT$set.string(c('Źle', 'Dobrze', 'Za późno')[ACC + 1])
                 WINDOW$draw(center.win(TXT))
                 WINDOW$display()
             }else{
@@ -245,7 +244,7 @@ trial.code = function(trial, side = 'left', contrast = .5, duration = 64, withsc
             WINDOW$clear(c(.5, .5, .5))
             WINDOW$display()
             ## Zapisujemy dotychczasowe dane i dopasowujemy model do kalibracji, ale tylko na etapie testowym
-            dane[trial, c('contrast', 'acc')] <<- c(contrast, acc)
+            dane[trial, c('contrast', 'acc')] <<- c(contrast, ACC)
             if((trial > FITTING.START) & (stage == 'test')){
                 model <<- glm(acc ~ contrast, dane[dane$acc %in% 0:1,], family = binomial)
                 if(coef(model)[2] <= 0){
@@ -257,7 +256,7 @@ trial.code = function(trial, side = 'left', contrast = .5, duration = 64, withsc
                 }
             }
             return(list(scalert = scale.rt, scalevalue = scale.value,
-                        rt = rt, acc = acc, usedcontrast = contrast))
+                        rt = RT, acc = ACC, usedcontrast = contrast))
         })
     }
 }
